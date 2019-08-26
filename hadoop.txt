@@ -1,0 +1,212 @@
+//hdfs
+
+hadoop fs -mkdir /user/cloudera/practice
+hadoop fs -ls /user/cloudera
+
+//copy from local to hdfs
+hadoop fs -put /home/cloudera/abc.txt /user/cloudera/practice/abc.txt
+
+hadoop fs -cat /user/cloudera/practice/abc.txt
+
+//copy from hdfs to local
+hadoop fs -get /user/cloudera/practice/abc.txt /home/cloudera/abcd.txt
+
+//sqoop
+
+mysql -u root -p
+create database practice;
+use practice;
+create table demo(id int,name varchar(20));
+ insert into table demo (23,'deepa');
+select * from demo;
+
+//import from sql table to hdfs
+
+sqoop import --connect jdbc:mysql://127.0.0.1/practice --username root --password cloudera --table demo --target-dir /user/cloudera/practice/test -m 1
+
+hadoop fs -ls /user/cloudera/practice/test
+hadoop fs -cat /user/cloudera/practice/test/part*
+
+//import using where
+
+sqoop import --connect jdbc:mysql://127.0.0.1/practice --username root -P --table demo --where "id = 24" --target-dir /user/cloudera/practice/test2 -m 1
+
+//export from hdfs to sql table
+
+sqoop export --connect jdbc:mysql://127.0.0.1/practice --username root --password cloudera --table demo2 --export-dir /user/cloudera/practice/test/part* -m 1
+
+//hbase
+
+hbase shell
+list
+create 'customer','address'
+scan 'customer'
+put 'customer','deepa','address:city','mumbai'0
+alter 'customer','order'
+put 'customer','deepa','order:number','2355'
+disable 'demo'
+drop 'demo'		// for dropping table , first disable table
+truncate 'capgemini'		//delete all data but structure remain same
+get 'customer','deepa','address:city'  //to get the particular value
+delete 'customer','deepa','address:city'	//to delete particular value
+
+//version in hbase
+create 'demo',{NAME => 'address',VERSIONS =>3}
+ put 'demo','deepa','address:city','mumbai'
+put 'demo','deepa','address:city','chennai'
+put 'demo','deepa','address:city','banglore'
+
+describe 'demo'
+get 'demo','deepa',{COLUMN=>'address:city',VERSIONS=>1}
+get 'demo','deepa',{COLUMN=>'address:city',VERSIONS=>2}
+get 'demo','deepa',{COLUMN=>'address:city',VERSIONS=>3}
+
+
+//hive
+
+create database practice;
+use practice;
+create table demo (id int, name string);
+
+create table demo1 (id int, name string)
+row format delimited
+fields terminated by ',';
+
+create table demo2 (id int, name string,)
+row format delimited
+fields terminated by ','
+lines terminated by '\n';
+
+create table demo3 (id int, name string)
+row format delimited
+fields terminated by ','
+stored as textfile;
+
+mkdir hive //this in local cloudera in another terminal
+cd hive
+vi data.txt
+
+load data local inpath '/home/cloudera/hive/data.txt'		
+overwrite into table demo;
+
+load data local inpath '/home/cloudera/hive/data.txt'		
+overwrite into table demo1;
+
+load data local inpath '/home/cloudera/hive/data.txt'		
+overwrite into table demo2;
+
+load data local inpath '/home/cloudera/hive/data.txt'		
+overwrite into table demo3;
+
+create table demo4 (id int, name string)
+row format delimited
+fields terminated by '\t'
+stored as textfile;
+
+load data local inpath '/home/cloudera/hive/data.txt'		
+overwrite into table demo4;
+
+//from hive
+dfs -ls /user/hive/warehouse;
+dfs -ls /user/hive/warehouse/practice.db;
+
+//from local cloudera
+hdfs dfs -ls /user/hive/warehouse/practice.db
+
+//creating table through hive file
+vi command.hive
+hive -f command.hive
+
+//external table
+
+create external table employee(id int, name string)
+row format delimited
+fields terminated by '\t'
+lines terminated by '\n'
+location '/home/cloudera/hive';
+
+vi test.txt //data present for loading into employee
+
+load data local inpath '/home/cloudera/hive/test.txt'
+into table employee;
+
+dfs -ls /home/cloudera/hive
+
+drop table employee;
+show tables;
+
+dfs -ls /home/cloudera/hive  //file sttill exist after droping table
+
+//partition
+
+vi mumbai.txt
+vi chennai.txt
+
+create table emp (id int, name string)
+partitioned by (loc string)
+row format delimited
+fields terminated by '\t';
+
+load data local inpath '/home/cloudera/hive/mumbai.txt'
+into table emp
+partition (loc='mumbai');
+
+load data local inpath '/home/cloudera/hive/chennai.txt'
+into table emp
+partition (loc='chennai');
+
+dfs -ls /user/hive/warehouse/practice.db/emp;
+
+select * from emp;
+select * from emp where loc='mumbai';
+
+//bucketing
+
+create table emp_buc(id int, name string, loc string)
+clustered by (loc) into 3 buckets
+row format delimited
+fields terminated by '\t';
+
+create table emp_bc(id int, name string, loc string)
+row format delimited
+fields terminated by '\t';
+
+load data local inpath '/home/cloudera/all_states.txt' into table emp_bc;
+
+insert overwrite table emp_buc select * from emp_bc;
+
+
+
+dfs -ls /user/hive/warehouse/practice.db;
+dfs -ls /user/hive/warehouse/practice.db/emp_buc;
+
+set hive.enforce.bucketing;
+set hive.enforce.bucketing=true;
+
+insert overwrite table emp_buc select * from emp;
+
+dfs -ls /user/hive/warehouse/practice.db/emp_buc;
+dfs -cat /user/hive/warehouse/practice.db/emp_buc/000000_0;
+dfs -cat /user/hive/warehouse/practice.db/emp_buc/000001_0;
+dfs -cat /user/hive/warehouse/practice.db/emp_buc/000002_0;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
