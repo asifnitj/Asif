@@ -1,0 +1,106 @@
+SPARK COMMANDS-
+
+------------------------------->To start shell type this >> spark-shell
+//to load the data
+val inputfile = sc.textFile("file:/home/cloudera/newdf.txt");
+//count lines
+inputfile.count
+//to print
+inputfile.foreach(println)
+//for first five line to print
+inputfile.take(5).foreach(println)
+//to upper the file data
+val upper=inputfile.map(a=> a.toUpperCase());
+upper.foreach(println)
+//to save this upper case data
+upper.saveAsTextFile("file:/home/cloudera/spark1")
+
+//Loading data from HDFS
+val inputfile1 = sc.textFile("hdfs://quickstart.cloudera:8020/user/cloudera/goat/gh");
+
+//for checking line length of each line
+val linelength = inputfile1.map(s=>s.length);
+//to print line length of each line
+linelength.foreach(println)
+//to check total line length
+val totallength = linelength.reduce((a,b)=> a+b);
+//to print the total linelength
+println("total Length :" +totallength);
+
+//word count
+val inputfile2 = sc.textFile("file:/home/cloudera/file1.txt");
+val transform = inputfile2.map(line => line.split(" ")) // it will give array of each line so we dont use this for word count
+transform.collect  // result
+res11: Array[Array[String]] = Array(Array(hive, hbase, hive, java), Array(scala, java, hbase), Array(hive, java))
+
+we have to use this for word count--->
+val transform = inputfile2.flatMap(line => line.split(" ")); //to separate each word
+val keybyword = transform.map(word => (word ,1));
+keybyword.foreach(println)
+val counts = keybyword.reduceByKey((a,b) =>a+b).sortByKey();----//by default ascending order
+counts.foreach(println);
+-----count of each repeated word 
+transform.foreach(println)
+//for descending order
+ val counts = keybyword.reduceByKey((a,b) =>a+b).sortByKey(false);
+counts.foreach(println);
+
+//sortby value
+val sortbyval = counts.collect.sortBy(-_._2);
+
+--> here 2 is thecolumn number and minus is used for desc
+
+sortbyval.foreach(println)
+
+//to save thias we cant use saveAsTextFile directly we have to use this sc.parallelize
+//reason is array cant be stored as textfile
+sc.parallelize(sortbyval).saveAsTextFile("file:/home/cloudera/spark2")
+
+====================================================================================================
+always run count after upload coz it follows lazy evaluation 
+
+coz it execute only when action is called
+
+====================================================================================================
+ val lines = sc.textFile("file:/home/cloudera/mapred-hduser-historyserver-ubuntu.log")
+ lines.count
+val lines_lower = lines.map(a=>a.toLowerCase());
+val errors = lines_lower.filter(a=>a.contains("error"));
+ errors.count
+errors.cache() //to save this file for long period use
+errors.filter(a=>a.contains("sigterm")).count()
+errors.filter(a=>a.contains("token")).count()
+============================================================
+//for customerdata
+val custRDD = sc.textFile("file:/home/cloudera/custs.txt");
+custRDD.count
+custRDD.take(10).foreach(println)
+val professionRDD = custRDD.map(x=> (x.split(",")(4),1));
+professionRDD.take(10).foreach(println)
+val profcount = professionRDD.reduceByKey(_+_);
+profcount.foreach(println);
+val sortbyval = profcount.collect.sortBy(-_._2);
+ sortbyval.foreach(println)
+===============================================================
+find top 10 selling product
+
+to find hihest selling product-------------
+val txnRDD = sc.textFile("file:/home/cloudera/txns1.txt");
+val productRDD = txnRDD.map(x=>(x.split(",")(5),x.split(",")(3).toDouble))
+
+productRDD.take(10).foreach(println)
+val prodcount = productRDD.reduceByKey(_+_);
+
+val sortbyval = prodcount.collect.sortBy(-_._2);
+val top10 = sortbyval.take(10)
+top10.foreach(println) ---------------highest selling 
+
+===========================================================
+val txnRDD = sc.textFile("file:/home/cloudera/txns1.txt");
+val custRDD = txnRDD.map(x=>(x.split(",")(2),x.split(",")(3).toDouble))
+val spendbyCust = custRDD.reduceByKey(_+_);
+val sortbyval =spendbyCust.collect.sortBy(-_._2);
+ val top10 = sortbyval.take(10)
+top10.foreach(println)   /// for hihgest sell customer
+
+
